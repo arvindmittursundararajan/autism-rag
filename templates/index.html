@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Knowledge Assistant</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+    <!-- Animated Background -->
+</head>
+<body>
+    <!-- Animated Background -->
+
+    <!-- Header -->
+    <header class="app-header">
+        <nav class="navbar navbar-light">
+            <div class="container">
+                <a class="navbar-brand" href="/" data-tooltip="Your AI-powered knowledge assistant">
+                    <i class="fas fa-brain"></i> RAG Knowledge Assistant
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <div class="app-container">
+            <div class="pane-container">
+                <!-- All three panes will be inside this container for Split.js -->
+                <!-- Left Pane: Upload Section -->
+                <div class="left-pane pane" id="left-pane">
+                    <h2 class="panel-heading">
+                        <i class="fas fa-cloud-upload-alt"></i> Add Content
+                    </h2>
+                    
+                    <!-- Upload Options -->
+                    <div class="upload-section glass-container">
+                        <h3>Select Content Source</h3>
+                        <div class="upload-options">
+                            <div class="upload-option active" data-source="text" data-tooltip="Text files (.txt)">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Text</span>
+                            </div>
+                            <div class="upload-option" data-source="pdf" data-tooltip="PDF documents">
+                                <i class="fas fa-file-pdf"></i>
+                                <span>PDF</span>
+                            </div>
+                            <div class="upload-option" data-source="youtube" data-tooltip="YouTube video transcripts">
+                                <i class="fab fa-youtube"></i>
+                                <span>YouTube</span>
+                            </div>
+                            <div class="upload-option" data-source="audio" data-tooltip="Audio transcription">
+                                <i class="fas fa-volume-up"></i>
+                                <span>Audio</span>
+                            </div>
+                            <div class="upload-option" data-source="image" data-tooltip="Extract text from images">
+                                <i class="fas fa-image"></i>
+                                <span>Image</span>
+                            </div>
+                            <div class="upload-option" data-source="website" data-tooltip="Scrape content from websites">
+                                <i class="fas fa-globe"></i>
+                                <span>Website</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Text File Form -->
+                        <div id="text-form" class="upload-form active">
+                            <label class="form-label">Upload Text File</label>
+                            <input type="file" id="text-file" class="form-control file-input" accept=".txt">
+                        </div>
+                        
+                        <!-- PDF Form -->
+                        <div id="pdf-form" class="upload-form">
+                            <label class="form-label">Upload PDF File</label>
+                            <input type="file" id="pdf-file" class="form-control file-input" accept=".pdf">
+                        </div>
+                        
+                        <!-- YouTube Form -->
+                        <div id="youtube-form" class="upload-form">
+                            <label class="form-label">Enter YouTube URL</label>
+                            <input type="url" id="youtube-url" class="form-control url-input" placeholder="https://www.youtube.com/watch?v=...">
+                        </div>
+                        
+                        <!-- Audio Form -->
+                        <div id="audio-form" class="upload-form">
+                            <label class="form-label">Upload Audio File</label>
+                            <input type="file" id="audio-file" class="form-control file-input" accept=".mp3, .wav">
+                        </div>
+                        
+                        <!-- Image Form -->
+                        <div id="image-form" class="upload-form">
+                            <label class="form-label">Upload Image File</label>
+                            <input type="file" id="image-file" class="form-control file-input" accept=".jpg, .jpeg, .png">
+                        </div>
+                        
+                        <!-- Website Form -->
+                        <div id="website-form" class="upload-form">
+                            <label class="form-label">Enter Website URL</label>
+                            <input type="url" id="website-url" class="form-control url-input" placeholder="https://example.com">
+                        </div>
+                        
+                        <!-- Extract Button -->
+                        <button id="extract-content-btn" class="btn btn-airbnb mt-3">
+                            <i class="fas fa-magic"></i> Extract Content
+                        </button>
+                    </div>
+                    
+                    <!-- Content Preview and Storage -->
+                    <div class="content-container glass-container">
+                        <h3>Content Preview</h3>
+                        <div id="upload-alerts"></div>
+                        <div id="upload-loading" class="loading-indicator">
+                            <div class="spinner"></div>
+                            <p>Processing content...</p>
+                        </div>
+                        
+                        <textarea id="content-preview" class="content-preview" placeholder="Extracted content will appear here"></textarea>
+                        
+                        <div class="document-metadata mb-3">
+                            <label class="form-label">Document Title</label>
+                            <input type="text" id="document-title" class="form-control" placeholder="Enter a title for this document">
+                        </div>
+                        
+                        <button id="store-document-btn" class="btn btn-airbnb w-100" disabled>
+                            <i class="fas fa-database"></i> Store in Knowledge Base
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Middle Pane: Collection View -->
+                <div class="middle-pane pane" id="middle-pane">
+                    <h2 class="panel-heading">
+                        <i class="fas fa-book"></i> Knowledge Base
+                    </h2>
+                    
+                    <div class="collection-toolbar glass-container">
+                        <div class="collection-stats">
+                            <span id="document-count" data-tooltip="Total documents in knowledge base">0 Documents</span>
+                            <span id="storage-size" data-tooltip="Total storage size of documents" class="ms-3"><i class="fas fa-database"></i> 0 KB</span>
+                            <span id="storage-size" data-tooltip="Total storage size of documents" class="ms-3"><i class="fas fa-database"></i> 0 KB</span>
+                        </div>
+                        <div class="collection-actions">
+                            <button id="refresh-collection-btn" class="btn btn-outline-airbnb" data-tooltip="Refresh document list">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button id="delete-selected-btn" class="btn btn-outline-airbnb" disabled data-tooltip="Delete selected documents">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="collection-alerts"></div>
+                    <div id="collection-loading" class="loading-indicator">
+                        <div class="spinner"></div>
+                        <p>Loading documents...</p>
+                    </div>
+                    
+                    <!-- Documents Container -->
+                    <div id="cards-container" class="cards-container">
+                        <!-- Cards will be dynamically added here -->
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="pagination-container" class="pagination-container">
+                        <!-- Pagination will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <!-- Right Pane: Chat Interface -->
+                <div class="right-pane pane" id="right-pane">
+                    <h2 class="panel-heading">
+                        <i class="fas fa-comments"></i> Chat Assistant
+                    </h2>
+                    
+                    <!-- Search Options -->
+                    <div class="chat-options glass-container">
+                        <div class="chat-actions">
+                            <button id="clear-chat-btn" class="btn btn-outline-airbnb btn-sm" data-tooltip="Clear conversation history">
+                                <i class="fas fa-trash-alt"></i> Clear Chat
+                            </button>
+                        </div>
+                        <label class="chat-option-label">Search Options</label>
+                        
+                        <div class="chat-toggle">
+                            <span class="toggle-label">Knowledge Base Search</span>
+                            <label class="toggle-checkbox" data-tooltip="Search your stored documents">
+                                <input type="checkbox" id="knowledge-search-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="chat-toggle">
+                            <span class="toggle-label">Web Search</span>
+                            <label class="toggle-checkbox" data-tooltip="Search the web for answers">
+                                <input type="checkbox" id="web-search-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Messages -->
+                    <div id="messages-container" class="messages-container glass-container">
+                        <!-- Messages will be dynamically added here -->
+                        <div class="message message-ai">
+                            <div class="message-sender">AI Assistant</div>
+                            <div class="message-content">
+                                Hello! I'm your AI assistant. I can answer questions based on the knowledge base and web search. How can I help you today?
+                            </div>
+                            <div class="message-timestamp">{{ now }}</div>
+                        </div>
+                    </div>
+                    
+                    <div id="chat-loading" class="loading-indicator">
+                        <div class="spinner"></div>
+                        <p>AI is thinking...</p>
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <form id="chat-form">
+                        <div class="chat-input-container">
+                            <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question...">
+                            <button type="submit" class="send-button" data-tooltip="Send message">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Split.js for resizable panes -->
+    <script src="{{ url_for('static', filename='js/libs/split.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/collection.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script>
+        // Initialize Split.js for resizable panes
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create split panes with drag-to-resize capability
+            if (typeof Split !== 'undefined') {
+                Split(['#left-pane', '#middle-pane', '#right-pane'], {
+                    sizes: [30, 30, 40],
+                    minSize: [250, 250, 300],
+                    gutterSize: 6,
+                    snapOffset: 0,
+                    dragInterval: 1,
+                    direction: 'horizontal',
+                    cursor: 'col-resize'
+                });
+                console.log('Split panes initialized');
+            } else {
+                console.error('Split.js not loaded');
+            }
+        });
+    </script>
+</body>
+</html>
+    <!-- Citations Modal -->
+    <div id="citations-modal" class="modal">
+        <div id="citations-modal-content" class="modal-content glass-container">
+            <h3>Citations <span class="close-modal">&times;</span></h3>
+            <!-- Citation content will be dynamically added here -->
+        </div>
+    </div>
